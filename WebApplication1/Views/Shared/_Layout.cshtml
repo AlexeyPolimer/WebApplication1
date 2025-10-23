@@ -37,6 +37,15 @@
                                 <i class="fas fa-user"></i> Личный кабинет
                             </a>
                         </li>
+                        <!-- Добавьте эту проверку для админов -->
+                        @if (Context.Session.GetString("UserRole") != "User")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-warning" asp-controller="Admin" asp-action="Index">
+                                    <i class="fas fa-crown"></i> Админ-панель
+                                </a>
+                            </li>
+                        }
                     }
                 </ul>
 

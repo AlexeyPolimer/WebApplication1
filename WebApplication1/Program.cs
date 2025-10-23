@@ -6,23 +6,38 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Настройки сессии
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromHours(24); // Увеличиваем время жизни сессии
+    options.IdleTimeout = TimeSpan.FromHours(24);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Для разработки
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
 });
 
 var app = builder.Build();
-app.UseStaticFiles(); // Эта строка должна быть
 
-// Миграция базы данных
+// Создание главного админа при запуске
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // Проверяем, есть ли супер-админ
+    if (!db.Users.Any(u => u.Role == "SuperAdmin"))
+    {
+        var superAdmin = new User
+        {
+            Username = "admin",
+            Password = "admin123",
+            Role = "SuperAdmin",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.Users.Add(superAdmin);
+        db.SaveChanges();
+        Console.WriteLine("Создан главный администратор: admin / admin123");
+    }
 }
 
 app.UseStaticFiles();
@@ -33,7 +48,4 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Запускаем приложение
 app.Run();
-
-// Теперь приложение будет работать до ручной остановки

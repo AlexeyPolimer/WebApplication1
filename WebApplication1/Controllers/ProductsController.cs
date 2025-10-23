@@ -17,9 +17,19 @@ public class ProductsController : Controller
         var userId = HttpContext.Session.GetInt32("UserId");
         if (userId == null) return RedirectToAction("Index", "Home");
 
-        var products = _context.Products
-            .Where(p => p.UserId == userId)
-            .ToList();
+        var user = _context.Users.Find(userId);
+        if (user == null || !user.IsActive)
+        {
+            HttpContext.Session.Remove("UserId");
+            return RedirectToAction("Index", "Home");
+        }
+
+        // Админы видят все товары, пользователи - только свои
+        var products = user.Role == "User"
+            ? _context.Products.Where(p => p.UserId == userId).ToList()
+            : _context.Products.Include(p => p.User).ToList();
+
+        ViewBag.IsAdmin = user.Role != "User";
         return View(products);
     }
 
@@ -29,9 +39,15 @@ public class ProductsController : Controller
         var userId = HttpContext.Session.GetInt32("UserId");
         if (userId == null) return RedirectToAction("Index", "Home");
 
+        var user = _context.Users.Find(userId);
+        if (user == null || !user.IsActive)
+        {
+            HttpContext.Session.Remove("UserId");
+            return RedirectToAction("Index", "Home");
+        }
+
         string imagePath = null;
 
-        // Обработка загрузки изображения
         if (image != null && image.Length > 0)
         {
             imagePath = await SaveImage(image);
@@ -58,26 +74,36 @@ public class ProductsController : Controller
         var userId = HttpContext.Session.GetInt32("UserId");
         if (userId == null) return RedirectToAction("Index", "Home");
 
-        var product = _context.Products.FirstOrDefault(p => p.Id == id && p.UserId == userId);
-        if (product != null)
+        var user = _context.Users.Find(userId);
+        if (user == null || !user.IsActive)
         {
-            // Если загружено новое изображение
-            if (image != null && image.Length > 0)
-            {
-                // Удаляем старое изображение
-                if (!string.IsNullOrEmpty(product.ImagePath))
-                {
-                    DeleteImage(product.ImagePath);
-                }
-                // Сохраняем новое
-                product.ImagePath = await SaveImage(image);
-            }
-
-            product.Name = name;
-            product.Price = price;
-            product.Quantity = quantity;
-            _context.SaveChanges();
+            HttpContext.Session.Remove("UserId");
+            return RedirectToAction("Index", "Home");
         }
+
+        var product = _context.Products.FirstOrDefault(p => p.Id == id);
+        if (product == null) return RedirectToAction("Index");
+
+        // Проверка прав: пользователь может редактировать только свои товары, админы - любые
+        if (user.Role == "User" && product.UserId != userId)
+        {
+            TempData["Error"] = "У вас нет прав для редактирования этого товара";
+            return RedirectToAction("Index");
+        }
+
+        if (image != null && image.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(product.ImagePath))
+            {
+                DeleteImage(product.ImagePath);
+            }
+            product.ImagePath = await SaveImage(image);
+        }
+
+        product.Name = name;
+        product.Price = price;
+        product.Quantity = quantity;
+        _context.SaveChanges();
 
         return RedirectToAction("Index");
     }
@@ -88,18 +114,30 @@ public class ProductsController : Controller
         var userId = HttpContext.Session.GetInt32("UserId");
         if (userId == null) return RedirectToAction("Index", "Home");
 
-        var product = _context.Products.FirstOrDefault(p => p.Id == id && p.UserId == userId);
-        if (product != null)
+        var user = _context.Users.Find(userId);
+        if (user == null || !user.IsActive)
         {
-            // Удаляем изображение при удалении продукта
-            if (!string.IsNullOrEmpty(product.ImagePath))
-            {
-                DeleteImage(product.ImagePath);
-            }
-
-            _context.Products.Remove(product);
-            _context.SaveChanges();
+            HttpContext.Session.Remove("UserId");
+            return RedirectToAction("Index", "Home");
         }
+
+        var product = _context.Products.FirstOrDefault(p => p.Id == id);
+        if (product == null) return RedirectToAction("Index");
+
+        // Проверка прав: пользователь может удалять только свои товары, админы - любые
+        if (user.Role == "User" && product.UserId != userId)
+        {
+            TempData["Error"] = "У вас нет прав для удаления этого товара";
+            return RedirectToAction("Index");
+        }
+
+        if (!string.IsNullOrEmpty(product.ImagePath))
+        {
+            DeleteImage(product.ImagePath);
+        }
+
+        _context.Products.Remove(product);
+        _context.SaveChanges();
 
         return RedirectToAction("Index");
     }

@@ -1,0 +1,70 @@
+﻿@{
+    ViewData["Title"] = "Админ панель";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2><i class="fas fa-crown"></i> Админ панель</h2>
+
+    <!-- Статистика -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@ViewBag.Stats.TotalUsers</h3>
+                    <p class="mb-0">Всего пользователей</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@ViewBag.Stats.TotalProducts</h3>
+                    <p class="mb-0">Всего товаров</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>@ViewBag.Stats.TotalAdmins</h3>
+                    <p class="mb-0">Администраторов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@ViewBag.Stats.ActiveUsers</h3>
+                    <p class="mb-0">Активных пользователей</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрый доступ -->
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Управление пользователями</h5>
+                </div>
+                <div class="card-body">
+                    <p>Просмотр, редактирование и удаление пользователей системы</p>
+                    <a asp-action="Users" class="btn btn-primary">Перейти к пользователям</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-boxes"></i> Управление товарами</h5>
+                </div>
+                <div class="card-body">
+                    <p>Просмотр и управление всеми товарами в системе</p>
+                    <a asp-action="Products" class="btn btn-primary">Перейти к товарам</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

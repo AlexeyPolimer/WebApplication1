@@ -113,10 +113,11 @@ public class HomeController : Controller
     public IActionResult Login(string username, string password)
     {
         var user = _context.Users.FirstOrDefault(u => u.Username == username && u.Password == password);
-        if (user != null)
+        if (user != null && user.IsActive)
         {
             HttpContext.Session.SetInt32("UserId", user.Id);
-            HttpContext.Session.SetString("Username", user.Username); // Сохраняем имя
+            HttpContext.Session.SetString("Username", user.Username);
+            HttpContext.Session.SetString("UserRole", user.Role); // Сохраняем роль
             return RedirectToAction("Index", "Products");
         }
 
