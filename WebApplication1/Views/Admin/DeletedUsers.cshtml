@@ -1,0 +1,116 @@
+﻿@model List<User>
+@{
+    ViewData["Title"] = "Корзина пользователей";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2><i class="fas fa-trash"></i> Корзина пользователей</h2>
+    <p class="text-muted">Только для супер-администратора</p>
+
+    @if (Model.Any())
+    {
+        <div class="alert alert-warning">
+            <form method="post" asp-action="ClearAllDeleted" class="d-inline">
+                <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('ВНИМАНИЕ! Это удалит ВСЕХ пользователей и товары в корзине без возможности восстановления!')">
+                    <i class="fas fa-broom"></i> Очистить всю корзину
+                </button>
+            </form>
+            <span class="ms-2">Всего в корзине: @Model.Count пользователей</span>
+        </div>
+    }
+
+    <div class="table-responsive mt-4">
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Роль</th>
+                    <th>Статус</th>
+                    <th>Удален</th>
+                    <th>Кем удален</th>
+                    <th>Товаров</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Id</td>
+                        <td>@user.Username</td>
+                        <td>
+                            <span class="badge
+                                    @(user.Role == "SuperAdmin" ? "bg-danger" :
+                                                                    user.Role == "Admin" ? "bg-warning" : "bg-secondary")">
+                            @user.Role
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge @(user.IsActive ? "bg-success" : "bg-danger")">
+                            @(user.IsActive ? "Активен" : "Заблокирован")
+                        </span>
+                    </td>
+                    <td>@user.DeletedAt?.ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>
+                        @if (user.DeletedByUser != null)
+                            {
+                                <span>@user.DeletedByUser.Username (ID: @user.DeletedByUserId)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Система</span>
+                            }
+                        </td>
+                        <td>@user.Products.Count</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <form method="post" asp-action="RestoreUser" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-undo"></i> Восстановить
+                                    </button>
+                                </form>
+                                <form method="post" asp-action="PurgeUser" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="btn btn-danger"
+                                            onclick="return confirm('Полностью удалить пользователя @user.Username? Это действие необратимо!')">
+                                        <i class="fas fa-fire"></i> Удалить
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle"></i> Корзина пуста
+        </div>
+    }
+
+    <div class="mt-3">
+        <a asp-action="Users" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Назад к пользователям
+        </a>
+        <a asp-action="DeletedProducts" class="btn btn-outline-secondary">
+            <i class="fas fa-box"></i> Корзина товаров
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mt-3">@TempData["Success"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+    }
+</div>

@@ -8,4 +8,8 @@
     public int UserId { get; set; }
     public User User { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Мягкое удаление
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
 }

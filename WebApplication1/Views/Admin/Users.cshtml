@@ -2,10 +2,23 @@
 @{
     ViewData["Title"] = "Управление пользователями";
     Layout = "_Layout";
+
+    var currentUserId = Context.Session.GetInt32("UserId");
+    var currentUserRole = Context.Session.GetString("UserRole");
 }
 
 <div class="container mt-4">
     <h2><i class="fas fa-users"></i> Управление пользователями</h2>
+
+    @if (currentUserRole == "SuperAdmin")
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-trash"></i>
+            <a asp-action="DeletedUsers" class="alert-link">Перейти в корзину удаленных пользователей</a>
+            <span class="float-end">
+            </span>
+        </div>
+    }
 
     <div class="table-responsive mt-4">
         <table class="table table-striped">
@@ -25,40 +38,78 @@
                 {
                     <tr>
                         <td>@user.Id</td>
-                        <td>@user.Username</td>
                         <td>
-                            <form method="post" asp-action="UpdateUserRole" class="d-inline">
-                                <input type="hidden" name="userId" value="@user.Id" />
-                                <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
-                                    <option value="User" selected="@(user.Role == "User")">Пользователь</option>
-                                    <option value="Admin" selected="@(user.Role == "Admin")">Админ</option>
-                                    <option value="SuperAdmin" selected="@(user.Role == "SuperAdmin")">Супер-админ</option>
-                                </select>
-                                <input type="hidden" name="isActive" value="@user.IsActive.ToString().ToLower()" />
-                            </form>
+                            @user.Username
+                            @if (user.Id == currentUserId)
+                            {
+                                <span class="badge bg-info">Вы</span>
+                            }
                         </td>
                         <td>
-                            <form method="post" asp-action="UpdateUserRole" class="d-inline" id="statusForm-@user.Id">
-                                <input type="hidden" name="userId" value="@user.Id" />
-                                <input type="hidden" name="role" value="@user.Role" />
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox"
-                                           @(user.IsActive ? "checked" : "")
-                                           onchange="updateUserStatus(@user.Id, this.checked)">
-                                    <label class="form-check-label">@(user.IsActive ? "Активен" : "Заблокирован")</label>
-                                </div>
-                            </form>
+                            @if (currentUserRole == "SuperAdmin" || (currentUserRole == "Admin" && user.Role == "User"))
+                            {
+                                <form method="post" asp-action="UpdateUserRole" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="User" selected="@(user.Role == "User")">Пользователь</option>
+                                        <option value="Admin" selected="@(user.Role == "Admin")">Админ</option>
+                                        @if (currentUserRole == "SuperAdmin")
+                                        {
+                                            <option value="SuperAdmin" selected="@(user.Role == "SuperAdmin")">Супер-админ</option>
+                                        }
+                                    </select>
+                                    <input type="hidden" name="isActive" value="@user.IsActive.ToString().ToLower()" />
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="badge
+                                            @(user.Role == "SuperAdmin" ? "bg-danger" :
+                                                                            user.Role == "Admin" ? "bg-warning" : "bg-secondary")">
+                            @user.Role
+                        </span>
+                                                }
                         </td>
-                        <td>@user.Products.Count</td>
-                        <td>@user.CreatedAt.ToString("dd.MM.yyyy")</td>
                         <td>
-                            <form method="post" asp-action="DeleteUser" class="d-inline">
-                                <input type="hidden" name="userId" value="@user.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Удалить пользователя @user.Username и все его товары?')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                            @if (currentUserRole == "SuperAdmin" || (currentUserRole == "Admin" && user.Role == "User"))
+                            {
+                                <form method="post" asp-action="UpdateUserRole" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <input type="hidden" name="role" value="@user.Role" />
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="isActive" value="true"
+                                               @(user.IsActive ? "checked" : "") onchange="this.form.submit()">
+                                        <label class="form-check-label">@(user.IsActive ? "Активен" : "Заблокирован")</label>
+                                    </div>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="badge @(user.IsActive ? "bg-success" : "bg-danger")">
+                                    @(user.IsActive ? "Активен" : "Заблокирован")
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">@user.Products.Count</span>
+                        </td>
+                        <td>@user.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>
+                            @if ((currentUserRole == "SuperAdmin" && user.Role != "SuperAdmin") ||
+                                                    (currentUserRole == "Admin" && user.Role == "User"))
+                            {
+                                <form method="post" asp-action="DeleteUser" class="d-inline">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Переместить пользователя @user.Username в корзину? Все его товары также будут перемещены в корзину.')">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
                         </td>
                     </tr>
                 }
@@ -66,37 +117,117 @@
         </table>
     </div>
 
+    <!-- Статистика -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>@Model.Count</h4>
+                    <p class="mb-0">Всего пользователей</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>@Model.Count(u => u.IsActive)</h4>
+                    <p class="mb-0">Активных</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h4>@Model.Count(u => u.Role != "User")</h4>
+                    <p class="mb-0">Администраторов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>@Model.Sum(u => u.Products.Count)</h4>
+                    <p class="mb-0">Всего товаров</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+        <div class="alert alert-danger mt-3">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["Error"]
+        </div>
     }
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success mt-3">@TempData["Success"]</div>
+        <div class="alert alert-success mt-3">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+        </div>
     }
+
+    <div class="mt-4">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад в админ-панель
+        </a>
+        <a asp-action="Products" class="btn btn-outline-primary">
+            <i class="fas fa-boxes"></i> Управление товарами
+        </a>
+    </div>
 </div>
 
 @section Scripts {
     <script>
-        function updateUserStatus(userId, isActive) {
-            // Находим форму по ID
-            const form = document.getElementById(`statusForm-${userId}`);
-
-            // Создаем скрытое поле для isActive
-            let isActiveInput = form.querySelector('input[name="isActive"]');
-            if (!isActiveInput) {
-                isActiveInput = document.createElement('input');
-                isActiveInput.type = 'hidden';
-                isActiveInput.name = 'isActive';
-                form.appendChild(isActiveInput);
+        // Авто-обновление статусов каждые 30 секунд
+        setInterval(() => {
+            const shouldRefresh = confirm('Обновить список пользователей?');
+            if (shouldRefresh) {
+                location.reload();
             }
+        }, 30000);
 
-            // Устанавливаем значение
-            isActiveInput.value = isActive.toString();
+        // Подтверждение для блокировки/разблокировки
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusSwitches = document.querySelectorAll('.form-check-input');
+            statusSwitches.forEach(switchEl => {
+                switchEl.addEventListener('change', function(e) {
+                    const isActive = this.checked;
+                    const action = isActive ? 'разблокировать' : 'заблокировать';
+                    const username = this.closest('tr').querySelector('td:nth-child(2)').textContent.trim();
 
-            // Отправляем форму
-            form.submit();
-        }
+                    if (!confirm(`Вы уверены, что хотите ${action} пользователя "${username}"?`)) {
+                        e.preventDefault();
+                        this.checked = !isActive; // Возвращаем обратно
+                    }
+                });
+            });
+
+            // Подсветка текущего пользователя
+            const currentRow = document.querySelector('tr td .badge.bg-info').closest('tr');
+            if (currentRow) {
+                currentRow.style.backgroundColor = 'rgba(13, 110, 253, 0.1)';
+            }
+        });
     </script>
+
+    <style>
+        .table tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+            transition: background-color 0.2s ease;
+        }
+
+        .form-select-sm {
+            width: auto;
+            display: inline-block;
+        }
+
+        .form-switch .form-check-input {
+            cursor: pointer;
+        }
+
+        .badge {
+            font-size: 0.75em;
+        }
+    </style>
 }
