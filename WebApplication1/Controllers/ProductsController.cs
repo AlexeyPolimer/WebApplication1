@@ -34,7 +34,7 @@ public class ProductsController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(string name, decimal price, int quantity, IFormFile image)
+    public async Task<IActionResult> Create(string name, decimal price, int quantity, IFormFile? image) // Делаем image nullable
     {
         var userId = HttpContext.Session.GetInt32("UserId");
         if (userId == null) return RedirectToAction("Index", "Home");
@@ -46,7 +46,7 @@ public class ProductsController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        string imagePath = null;
+        string? imagePath = null; // Делаем nullable
 
         if (image != null && image.Length > 0)
         {
@@ -58,7 +58,7 @@ public class ProductsController : Controller
             Name = name,
             Price = price,
             Quantity = quantity,
-            ImagePath = imagePath,
+            ImagePath = imagePath, // Может быть null
             UserId = userId.Value
         };
 

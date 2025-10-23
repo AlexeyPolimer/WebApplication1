@@ -51,7 +51,7 @@ public class AdminController : Controller
     }
 
     [HttpPost]
-    public IActionResult UpdateUserRole(int userId, string role, bool isActive)
+    public IActionResult UpdateUserRole(int userId, string role, string isActive) // Меняем на string
     {
         if (!IsAdmin()) return RedirectToAction("Index", "Home");
 
@@ -65,7 +65,7 @@ public class AdminController : Controller
         }
 
         user.Role = role;
-        user.IsActive = isActive;
+        user.IsActive = isActive == "true"; // Конвертируем string в bool
         _context.SaveChanges();
 
         TempData["Success"] = "Пользователь успешно обновлен";

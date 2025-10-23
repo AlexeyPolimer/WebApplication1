@@ -38,12 +38,13 @@
                             </form>
                         </td>
                         <td>
-                            <form method="post" asp-action="UpdateUserRole" class="d-inline">
+                            <form method="post" asp-action="UpdateUserRole" class="d-inline" id="statusForm-@user.Id">
                                 <input type="hidden" name="userId" value="@user.Id" />
                                 <input type="hidden" name="role" value="@user.Role" />
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="isActive" value="true"
-                                           @(user.IsActive ? "checked" : "") onchange="this.form.submit()">
+                                    <input class="form-check-input" type="checkbox"
+                                           @(user.IsActive ? "checked" : "")
+                                           onchange="updateUserStatus(@user.Id, this.checked)">
                                     <label class="form-check-label">@(user.IsActive ? "Активен" : "Заблокирован")</label>
                                 </div>
                             </form>
@@ -75,3 +76,27 @@
         <div class="alert alert-success mt-3">@TempData["Success"]</div>
     }
 </div>
+
+@section Scripts {
+    <script>
+        function updateUserStatus(userId, isActive) {
+            // Находим форму по ID
+            const form = document.getElementById(`statusForm-${userId}`);
+
+            // Создаем скрытое поле для isActive
+            let isActiveInput = form.querySelector('input[name="isActive"]');
+            if (!isActiveInput) {
+                isActiveInput = document.createElement('input');
+                isActiveInput.type = 'hidden';
+                isActiveInput.name = 'isActive';
+                form.appendChild(isActiveInput);
+            }
+
+            // Устанавливаем значение
+            isActiveInput.value = isActive.toString();
+
+            // Отправляем форму
+            form.submit();
+        }
+    </script>
+}
