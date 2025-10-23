@@ -41,6 +41,73 @@ public class HomeController : Controller
         return View();
     }
 
+
+    public IActionResult Profile()
+    {
+        var userId = HttpContext.Session.GetInt32("UserId");
+        if (userId == null) return RedirectToAction("Index", "Home");
+
+        var user = _context.Users
+            .Include(u => u.Products)
+            .FirstOrDefault(u => u.Id == userId);
+
+        if (user == null)
+        {
+            HttpContext.Session.Remove("UserId");
+            return RedirectToAction("Index", "Home");
+        }
+
+        // Статистика
+        ViewBag.TotalProducts = user.Products.Count;
+        ViewBag.TotalValue = user.Products.Sum(p => p.Price * p.Quantity);
+        ViewBag.AveragePrice = user.Products.Any() ? user.Products.Average(p => p.Price) : 0;
+
+        return View(user);
+    }
+
+    [HttpPost]
+    public IActionResult UpdateProfile(string username, string currentPassword, string newPassword)
+    {
+        var userId = HttpContext.Session.GetInt32("UserId");
+        if (userId == null) return RedirectToAction("Index", "Home");
+
+        var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+        if (user == null)
+        {
+            HttpContext.Session.Remove("UserId");
+            return RedirectToAction("Index", "Home");
+        }
+
+        // Проверяем текущий пароль если меняем пароль
+        if (!string.IsNullOrEmpty(newPassword) && user.Password != currentPassword)
+        {
+            TempData["Error"] = "Текущий пароль неверен";
+            return RedirectToAction("Profile");
+        }
+
+        // Обновляем имя пользователя если оно изменилось
+        if (!string.IsNullOrEmpty(username) && user.Username != username)
+        {
+            if (_context.Users.Any(u => u.Username == username && u.Id != userId))
+            {
+                TempData["Error"] = "Пользователь с таким логином уже существует";
+                return RedirectToAction("Profile");
+            }
+            user.Username = username;
+            HttpContext.Session.SetString("Username", username); // Обновляем в сессии
+        }
+
+        // Обновляем пароль если указан новый
+        if (!string.IsNullOrEmpty(newPassword))
+        {
+            user.Password = newPassword;
+        }
+
+        _context.SaveChanges();
+        TempData["Success"] = "Профиль успешно обновлен";
+        return RedirectToAction("Profile");
+    }
+
     [HttpPost]
     public IActionResult Login(string username, string password)
     {
