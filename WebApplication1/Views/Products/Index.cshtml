@@ -1,0 +1,111 @@
+﻿@model List<Product>
+@{
+    Layout = "_Layout";
+
+    // Проверка авторизации
+    if (Context.Session.GetInt32("UserId") == null)
+    {
+        Context.Response.Redirect("/Home/Index");
+        return;
+    }
+}
+
+<div class="container mt-5">
+    <h2>Мои продукты</h2>
+
+    <div class="mb-4">
+        <h4>Добавить продукт</h4>
+        <form method="post" asp-action="Create">
+            <div class="row">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="name" placeholder="Название" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" class="form-control" name="price" placeholder="Цена" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" name="quantity" placeholder="Количество" required>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Цена</th>
+                <th>Количество</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in Model)
+            {
+                <tr>
+                    <td>@product.Name</td>
+                    <td>@product.Price.ToString("C")</td>
+                    <td>@product.Quantity</td>
+                    <td>
+                        <form method="post" class="d-inline" asp-action="Delete">
+                            <input type="hidden" name="id" value="@product.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                        </form>
+                        <button class="btn btn-warning btn-sm"
+                                onclick="editProduct(@product.Id, '@product.Name', @product.Price, @product.Quantity)">
+                            Изменить
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Модальное окно для редактирования -->
+<div class="modal fade" id="editModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Update">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изменение продукта</h5>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editId" name="id" />
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" id="editName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Цена</label>
+                        <input type="number" step="0.01" class="form-control" id="editPrice" name="price" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Количество</label>
+                        <input type="number" class="form-control" id="editQuantity" name="quantity" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editProduct(id, name, price, quantity) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editPrice').value = price;
+            document.getElementById('editQuantity').value = quantity;
+
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+    </script>
+}
