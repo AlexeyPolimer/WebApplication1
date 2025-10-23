@@ -1,8 +1,8 @@
 ﻿@model List<Product>
 @{
+    ViewData["Title"] = "Мои продукты";
     Layout = "_Layout";
 
-    // Проверка авторизации
     if (Context.Session.GetInt32("UserId") == null)
     {
         Context.Response.Redirect("/Home/Index");
@@ -10,68 +10,95 @@
     }
 }
 
-<div class="container mt-5">
+<div class="container mt-4">
     <h2>Мои продукты</h2>
 
-    <div class="mb-4">
-        <h4>Добавить продукт</h4>
-        <form method="post" asp-action="Create">
-            <div class="row">
-                <div class="col-md-3">
-                    <input type="text" class="form-control" name="name" placeholder="Название" required>
+    <!-- Форма добавления продукта -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Добавить продукт</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-action="Create" enctype="multipart/form-data">
+                <div class="row">
+                    <div class="col-md-2">
+                        <input type="text" class="form-control" name="name" placeholder="Название" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" step="0.01" class="form-control" name="price" placeholder="Цена" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" name="quantity" placeholder="Количество" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="file" class="form-control" name="image" accept=".jpg,.jpeg,.png,.gif">
+                        <small class="text-muted">JPG, PNG, GIF (макс. 5MB)</small>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">Добавить продукт</button>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <input type="number" step="0.01" class="form-control" name="price" placeholder="Цена" required>
-                </div>
-                <div class="col-md-3">
-                    <input type="number" class="form-control" name="quantity" placeholder="Количество" required>
-                </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary">Добавить</button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Цена</th>
-                <th>Количество</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var product in Model)
-            {
-                <tr>
-                    <td>@product.Name</td>
-                    <td>@product.Price.ToString("C")</td>
-                    <td>@product.Quantity</td>
-                    <td>
+    <!-- Список продуктов -->
+    <div class="row">
+        @foreach (var product in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <!-- Изображение продукта -->
+                    <div class="card-img-container" style="height: 200px; overflow: hidden;">
+                        @if (!string.IsNullOrEmpty(product.ImagePath))
+                        {
+                            <img src="@product.ImagePath" class="card-img-top" alt="@product.Name"
+                                 style="height: 100%; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                 style="height: 100%;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="card-body">
+                        <h5 class="card-title">@product.Name</h5>
+                        <p class="card-text">
+                            <strong>Цена:</strong> @product.Price.ToString("C")<br>
+                            <strong>Количество:</strong> @product.Quantity
+                        </p>
+                    </div>
+
+                    <div class="card-footer">
                         <form method="post" class="d-inline" asp-action="Delete">
                             <input type="hidden" name="id" value="@product.Id" />
-                            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Удалить этот продукт?')">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
                         </form>
                         <button class="btn btn-warning btn-sm"
                                 onclick="editProduct(@product.Id, '@product.Name', @product.Price, @product.Quantity)">
-                            Изменить
+                            <i class="fas fa-edit"></i> Изменить
                         </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
-<!-- Модальное окно для редактирования -->
+<!-- Модальное окно редактирования -->
 <div class="modal fade" id="editModal">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" asp-action="Update">
+            <form method="post" asp-action="Update" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title">Изменение продукта</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editId" name="id" />
@@ -86,6 +113,11 @@
                     <div class="mb-3">
                         <label class="form-label">Количество</label>
                         <input type="number" class="form-control" id="editQuantity" name="quantity" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Новое изображение (опционально)</label>
+                        <input type="file" class="form-control" name="image" accept=".jpg,.jpeg,.png,.gif">
+                        <small class="text-muted">Оставьте пустым, чтобы сохранить текущее изображение</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -108,4 +140,12 @@
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }
     </script>
+
+    <style>
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+    </style>
 }

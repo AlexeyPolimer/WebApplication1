@@ -16,6 +16,7 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+app.UseStaticFiles(); // Ёта строка должна быть
 
 // ћиграци€ базы данных
 using (var scope = app.Services.CreateScope())

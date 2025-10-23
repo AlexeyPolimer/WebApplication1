@@ -21,6 +21,7 @@
                             <table class="table table-striped table-hover">
                                 <thead class="table-dark">
                                     <tr>
+                                        <th>Изображение</th>
                                         <th>Владелец</th>
                                         <th>Название продукта</th>
                                         <th>Цена</th>
@@ -31,12 +32,24 @@
                                     @foreach (var product in allProducts)
                                     {
                                         <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(product.ImagePath))
+                                                {
+                                                    <img src="@product.ImagePath" alt="@product.Name"
+                                                         style="width: 50px; height: 50px; object-fit: cover;" class="rounded">
+                                                }
+                                                else
+                                                {
+                                                    <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                         style="width: 50px; height: 50px;">
+                                                        <i class="fas fa-image text-muted"></i>
+                                                    </div>
+                                                }
+                                            </td>
                                             <td class="fw-bold">@product.User?.Username</td>
                                             <td>@product.Name</td>
                                             <td class="text-success fw-bold">@product.Price.ToString("C")</td>
-                                            <td>
-                                                <span class="badge bg-secondary">@product.Quantity шт.</span>
-                                            </td>
+                                            <td><span class="badge bg-secondary">@product.Quantity шт.</span></td>
                                         </tr>
                                     }
                                 </tbody>
