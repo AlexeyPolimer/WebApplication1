@@ -14,7 +14,17 @@ builder.Services.AddSession(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.None;
 });
 
+builder.Services.AddSingleton<ServerMonitorService>();
+
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    var monitor = context.RequestServices.GetService<ServerMonitorService>();
+    monitor?.IncrementRequests();
+
+    await next();
+});
 
 // Создание главного админа при запуске
 using (var scope = app.Services.CreateScope())

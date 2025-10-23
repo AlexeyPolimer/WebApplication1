@@ -42,8 +42,47 @@
         </div>
     </div>
 
-    <!-- Быстрый доступ -->
+    <!-- Графики -->
     <div class="row mt-5">
+        <!-- Линейный график - добавление товаров по часам -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Динамика добавления товаров</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="hourlyChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Столбчатая диаграмма - топ пользователей -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Топ пользователей по количеству товаров</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="topUsersChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- График стоимости -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Общая стоимость товаров по пользователям</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="valueChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрый доступ -->
+    <div class="row mt-4">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-dark text-white">
@@ -68,3 +107,173 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <!-- Подключаем Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Получаем данные из ViewBag
+        const chartData = @Html.Raw(Json.Serialize(ViewBag.ChartData));
+
+        // 1. Линейный график - добавление товаров по часам
+        const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+        new Chart(hourlyCtx, {
+            type: 'line',
+            data: {
+                labels: chartData.hourlyLabels,
+                datasets: [{
+                    label: 'Товаров добавлено',
+                    data: chartData.hourlyData,
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Динамика за последние 24 часа'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Количество товаров'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Время'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Столбчатая диаграмма - топ пользователей
+        const topUsersCtx = document.getElementById('topUsersChart').getContext('2d');
+        new Chart(topUsersCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.topUserLabels,
+                datasets: [{
+                    label: 'Количество товаров',
+                    data: chartData.topUserData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(199, 199, 199, 0.7)',
+                        'rgba(83, 102, 255, 0.7)',
+                        'rgba(40, 159, 64, 0.7)',
+                        'rgba(210, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(255, 99, 132)',
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 206, 86)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)',
+                        'rgb(255, 159, 64)',
+                        'rgb(199, 199, 199)',
+                        'rgb(83, 102, 255)',
+                        'rgb(40, 159, 64)',
+                        'rgb(210, 99, 132)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const index = context.dataIndex;
+                                const value = chartData.topUserValues[index];
+                                return `Общая стоимость: ${value.toLocaleString('ru-RU')} ₽`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Количество товаров'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Пользователи'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. График стоимости - общая стоимость товаров
+        const valueCtx = document.getElementById('valueChart').getContext('2d');
+        new Chart(valueCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.valueUserLabels,
+                datasets: [{
+                    label: 'Общая стоимость (₽)',
+                    data: chartData.valueUserData,
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Стоимость: ${context.raw.toLocaleString('ru-RU')} ₽`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Стоимость (₽)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('ru-RU') + ' ₽';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Пользователи'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}

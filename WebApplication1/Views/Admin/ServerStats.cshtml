@@ -1,0 +1,262 @@
+﻿@using System.Diagnostics
+@{
+    ViewData["Title"] = "Мониторинг сервера";
+    Layout = "_Layout";
+
+    // Получаем статистику
+    var serverStats = ViewBag.ServerStats as dynamic;
+    var databaseStats = ViewBag.DatabaseStats as dynamic;
+
+    // Безопасное получение значений
+    var memoryUsageMB = serverStats?.MemoryUsageMB ?? 0;
+    var threadCount = serverStats?.ThreadCount ?? 0;
+    var totalRequests = serverStats?.TotalRequests ?? 0;
+    var handleCount = serverStats?.HandleCount ?? 0;
+    var machineName = serverStats?.MachineName ?? "N/A";
+    var osVersion = serverStats?.OSVersion ?? "N/A";
+    var runtimeVersion = serverStats?.RuntimeVersion ?? "N/A";
+    var processId = serverStats?.ProcessId ?? 0;
+    var currentTime = serverStats?.CurrentTime ?? DateTime.UtcNow;
+    var startTime = serverStats?.StartTime ?? DateTime.UtcNow;
+    var uptime = serverStats?.Uptime ?? TimeSpan.Zero;
+    var cpuTime = serverStats?.CpuTime ?? TimeSpan.Zero;
+    var userProcessorTime = serverStats?.UserProcessorTime ?? TimeSpan.Zero;
+    var privateMemoryMB = serverStats?.PrivateMemoryMB ?? 0;
+    var virtualMemoryMB = serverStats?.VirtualMemoryMB ?? 0;
+
+    var totalUsers = databaseStats?.TotalUsers ?? 0;
+    var totalProducts = databaseStats?.TotalProducts ?? 0;
+    var databaseSizeMB = databaseStats?.DatabaseSizeMB ?? 0;
+    var lastBackup = databaseStats?.LastBackup ?? "N/A";
+
+    // Расчет процента памяти (примерно)
+    var memoryPercent = Math.Min((memoryUsageMB / 500.0) * 100, 100);
+}
+
+<div class="container mt-4">
+    <h2><i class="fas fa-server"></i> Мониторинг сервера</h2>
+    <p class="text-muted">Только для супер-администратора</p>
+
+    <!-- Общая статистика -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@memoryUsageMB MB</h3>
+                    <p class="mb-0">Использование памяти</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>@threadCount</h3>
+                    <p class="mb-0">Активных потоков</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>@totalRequests</h3>
+                    <p class="mb-0">Всего запросов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@handleCount</h3>
+                    <p class="mb-0">Открытых хендлов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информация о сервере -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Информация о системе</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Имя сервера:</strong></td>
+                            <td>@machineName</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ОС:</strong></td>
+                            <td>@osVersion</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.NET Version:</strong></td>
+                            <td>@runtimeVersion</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Process ID:</strong></td>
+                            <td>@processId</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Текущее время:</strong></td>
+                            <td>@currentTime.ToString("dd.MM.yyyy HH:mm:ss UTC")</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Время работы</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Запущен:</strong></td>
+                            <td>@startTime.ToString("dd.MM.yyyy HH:mm:ss UTC")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Аптайм:</strong></td>
+                            <td>
+                                @uptime.Days дн.
+                                @uptime.Hours ч.
+                                @uptime.Minutes мин.
+                                @uptime.Seconds сек.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>CPU Time:</strong></td>
+                            <td>
+                                @cpuTime.Days дн.
+                                @cpuTime.Hours ч.
+                                @cpuTime.Minutes мин.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>User CPU Time:</strong></td>
+                            <td>
+                                @userProcessorTime.Days дн.
+                                @userProcessorTime.Hours ч.
+                                @userProcessorTime.Minutes мин.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Использование памяти -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-memory"></i> Использование памяти</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Рабочий набор:</strong></td>
+                            <td>@memoryUsageMB MB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Приватная память:</strong></td>
+                            <td>@privateMemoryMB MB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Виртуальная память:</strong></td>
+                            <td>@virtualMemoryMB MB</td>
+                        </tr>
+                    </table>
+
+                    <!-- Простой график использования памяти -->
+                    <div class="mt-3">
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar @(memoryPercent > 80 ? "bg-danger" : "bg-success")"
+                                 style="width: @memoryPercent%"
+                                 role="progressbar">
+                                @memoryPercent.ToString("F1")%
+                            </div>
+                        </div>
+                        <small class="text-muted">Использование памяти (из 500 MB)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика БД -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-database"></i> База данных</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Пользователей:</strong></td>
+                            <td>@totalUsers</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Товаров:</strong></td>
+                            <td>@totalProducts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Размер БД:</strong></td>
+                            <td>@(databaseSizeMB > 0 ? databaseSizeMB + " MB" : "N/A")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Последний бэкап:</strong></td>
+                            <td>@lastBackup</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group">
+                        <form method="post" asp-action="ClearCache" class="d-inline">
+                            <button type="submit" class="btn btn-outline-warning">
+                                <i class="fas fa-broom"></i> Очистить кэш
+                            </button>
+                        </form>
+                        <button class="btn btn-outline-info" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Обновить статистику
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Назад в админ-панель
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mt-3">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Авто-обновление каждые 30 секунд
+        setInterval(() => {
+            console.log('Auto-refreshing server stats...');
+            location.reload();
+        }, 30000);
+    </script>
+}
