@@ -14,10 +14,15 @@ builder.Services.AddSession(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.None;
 });
 
+// Добавляем сервис мониторинга
 builder.Services.AddSingleton<ServerMonitorService>();
+
+// Добавляем сервис бэкапов
+builder.Services.AddScoped<BackupService>();
 
 var app = builder.Build();
 
+// Middleware для подсчета запросов
 app.Use(async (context, next) =>
 {
     var monitor = context.RequestServices.GetService<ServerMonitorService>();
@@ -26,13 +31,12 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Создание главного админа при запуске
+// Создание главного админа
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
-    // Проверяем, есть ли супер-админ
     if (!db.Users.Any(u => u.Role == "SuperAdmin"))
     {
         var superAdmin = new User
@@ -46,7 +50,7 @@ using (var scope = app.Services.CreateScope())
 
         db.Users.Add(superAdmin);
         db.SaveChanges();
-        Console.WriteLine("Создан главный администратор: admin / admin123");
+        Console.WriteLine(" Создан главный администратор: admin / admin123");
     }
 }
 

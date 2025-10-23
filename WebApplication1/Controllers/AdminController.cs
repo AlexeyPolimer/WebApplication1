@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 public class AdminController : Controller
 {
     private readonly AppDbContext _context;
+    private readonly IWebHostEnvironment _environment;
+    private readonly BackupService _backupService;
 
-    public AdminController(AppDbContext context)
+    public AdminController(AppDbContext context, IWebHostEnvironment environment, BackupService backupService)
     {
         _context = context;
+        _environment = environment;
+        _backupService = backupService;
     }
 
     public IActionResult Index()
@@ -28,6 +32,89 @@ public class AdminController : Controller
 
         return View();
     }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateBackup()
+    {
+        if (!IsSuperAdmin()) return RedirectToAction("Index", "Home");
+
+        try
+        {
+            var fileName = await _backupService.CreateBackupAsync();
+            TempData["Success"] = $"Бэкап создан: {fileName}";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Ошибка создания бэкапа: {ex.Message}";
+        }
+
+        return RedirectToAction("Backups");
+    }
+
+    public IActionResult Backups()
+    {
+        if (!IsSuperAdmin()) return RedirectToAction("Index", "Home");
+
+        var backups = _backupService.GetBackupFiles();
+        return View(backups);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RestoreBackup(string fileName)
+    {
+        if (!IsSuperAdmin()) return RedirectToAction("Index", "Home");
+
+        try
+        {
+            await _backupService.RestoreBackupAsync(fileName);
+            TempData["Success"] = $"Бэкап восстановлен: {fileName}";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Ошибка восстановления: {ex.Message}";
+        }
+
+        return RedirectToAction("Backups");
+    }
+
+    [HttpPost]
+    public IActionResult DeleteBackup(string fileName)
+    {
+        if (!IsSuperAdmin()) return RedirectToAction("Index", "Home");
+
+        try
+        {
+            var backupDir = Path.Combine(_environment.WebRootPath, "backups");
+            var filePath = Path.Combine(backupDir, fileName);
+            System.IO.File.Delete(filePath);
+            TempData["Success"] = $"Бэкап удален: {fileName}";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Ошибка удаления: {ex.Message}";
+        }
+
+        return RedirectToAction("Backups");
+    }
+
+    [HttpPost]
+    public IActionResult DownloadBackup(string fileName)
+    {
+        if (!IsSuperAdmin()) return RedirectToAction("Index", "Home");
+
+        var backupDir = Path.Combine(_environment.WebRootPath, "backups");
+        var filePath = Path.Combine(backupDir, fileName);
+
+        if (!System.IO.File.Exists(filePath))
+        {
+            TempData["Error"] = "Файл бэкапа не найден";
+            return RedirectToAction("Backups");
+        }
+
+        var fileBytes = System.IO.File.ReadAllBytes(filePath);
+        return File(fileBytes, "application/sql", fileName);
+    }
+
 
     [HttpPost]
     public IActionResult ClearCache()
